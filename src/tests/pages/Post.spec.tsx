@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { mocked } from 'ts-jest/utils';
+import { mocked } from 'jest-mock';
 import Post, { getStaticProps } from '../../pages/posts/[slug]';
 import { getPrismicClient } from '../../services/prismic';
 
@@ -40,7 +40,7 @@ describe('Post page', () => {
         },
         last_publication_date: '12-25-2021',
       }),
-    } as any);
+    } as never);
 
     const response = await getStaticProps({
       params: { slug: 'test-new-post' },

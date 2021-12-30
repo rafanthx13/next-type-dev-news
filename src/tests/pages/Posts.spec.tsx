@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { mocked } from 'ts-jest/utils';
+import { mocked } from 'jest-mock';
 import Posts, { getStaticProps } from '../../pages/posts';
 import { getPrismicClient } from '../../services/prismic';
 
@@ -16,7 +16,7 @@ jest.mock('../../services/prismic');
 
 describe('Posts page', () => {
   it('renders correctly', () => {
-    const { getByText, getByAltText } = render(<Posts posts={posts} />);
+    const { getByText } = render(<Posts posts={posts} />);
 
     expect(getByText('Title for new post')).toBeInTheDocument();
   });
@@ -37,7 +37,7 @@ describe('Posts page', () => {
           },
         ],
       }),
-    } as any);
+    } as never);
 
     const response = await getStaticProps({});
 

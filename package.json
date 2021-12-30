@@ -6,11 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "jest"
+    "test": "jest",
+    "test:corevage": "jest --coverage"
   },
   "dependencies": {
     "@prismicio/client": "^5.0.0",
     "date-fns": "^2.22.1",
+    "jest-mock": "^27.4.2",
     "next": "10.2.3",
     "prismic-dom": "^2.2.5",
     "react": "17.0.2",
