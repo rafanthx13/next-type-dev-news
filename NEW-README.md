@@ -52,6 +52,12 @@ export default function Post() {
 ````
 
 ## Estrilizaçâo no Next com SASS
+O nome oficial é SASS: Syntactically Awesome Style Sheets
+
+Difernça entre SASS E SCSS: É apenas sintax, arquivos .sass usam identaçao, enquanto que arquivos scss usam ainda chaves.
++ https://tipscode.com.br/qual-a-diferencas-entre-sass-e-scss
++ Basicamente SASS é como se fosse o YNK=L ebqaubtoi que SCSS o CSS padrao
++ https://tableless.com.br/sass-vs-less-vs-stylus-batalha-dos-pre-processadores/
 
 os arqvuiso na pasta `styles` terminam em `.modeule.css`
 
@@ -418,6 +424,11 @@ export default function Post({ comments }: CommentsProps) {
   // FUNCTIONS
   const router = useRouter();
 
+  // check fallback
+  if (router.isFallback) {
+    return <p>Loading...</p>;
+  }
+
   // RENDER
   return (
     <>
@@ -447,7 +458,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
   return {
     paths,
-    fallback: false,
+    fallback: true,
   };
 };
 
@@ -466,3 +477,618 @@ export const getStaticProps: GetStaticProps<CommentsProps> = async context => {
 };
 
 ````
+Vamos por
+``fallback: true``. Assim, ao invez de gerar um arquivo a cada novo past, vai gerar so quando o posrt for requisitado.
+
+Isos é necessário para corrigir o seguinte problema: `Caso tiver 100paginas, o nosso projeto nao pode gerr 100html de uma vez só`
+
+**com fallbaxk=true, naovai dar eror ao criar novos posts
+
+
+
+## API ROUTES
+
+
+é O node que o Next tras que permite SSR. OU SEJA UM NMINI-BACK-END QUE PODER SE USADO BONO BROWSER.
+
+É todo arquivo criado na apsta
+`api`, aí vira um end-point da API. São rotas/end-pont da API.
+
+Funciona como serveless, assim, NÂO É RECOMENDADOQUE O USE COMO UM BACK-END, mas permite que agente faça pequenas coisas.
+
+````tsx
+// src/api/routes
+// A rota é api/courses
+import { NextApiRequest, NextApiResponse } from 'next';
+
+export default (request: NextApiRequest, response: NextApiResponse) => {
+  const courses = [
+    { id: 1, name: 'Next.js com Typescript' },
+    { id: 2, name: 'React.js com Typescript' },
+    { id: 3, name: 'Node.js com Typescript' },
+    { id: 4, name: 'SASS' },
+    { id: 5, name: 'Styled Components' },
+  ];
+
+  return response.json(courses);
+};
+````
+
+Podemos acessar com /aoi/course. No vs-code tem o thudneerClinet:
+hyyp://localhost:3000/api/course (get)
+
+## Pageina de nao encontrao
+
+deve estar em `pagse` ser o arquivo `404.tsx`
+
+````
+export default function NotFound() {
+  return (
+    <div>
+      <h1>Page not found</h1>
+    </div>
+  );
+}
+````
+## Dynamic Import
+
+
+É a importaçâo de componetns/lib por demanda: se eu nunca acessar aquele recurso,nao acessa ela, se nao, aquilo naunca será carregado
+
+Ele apenas vai demosntrear, mas nao vamos usar na reladie.
+
+Esse aprendizado é imporatente para lidar com bibliotecas grandes como moment e lodash.
+
+Exemplo
+
+
+````ts
+// exemplo d euma lib que sera importada
+export default {
+  sum: (x: number, y: number) => {
+    return x + y;
+  },
+  sub: (x: number, y: number) => {
+    return x - y;
+  },
+};
+````
+
+
+````ts
+export default function Calculo() {
+  async function handleSum() {
+    const calc = (await import('../libs/calc')).default;
+
+    alert(calc.sum(5, 6));
+  }
+
+  return (
+    <div>
+      <h1>Calculo</h1>
+      <button onClick={handleSum}>Somar</button>
+    </div>
+  );
+}
+````
+
+Para fazer DynamicImport devemos atribuir como asynrono na hora de usar a lib.
+
+````ts
+async function handleSum() {
+    const calc = (await import('../libs/calc')).default;
+
+    alert(calc.sum(5, 6));
+  }
+````
+
+## Lazy Components
+
+Podemos fazer tambem o carregamentos de compontes
+**POR DEMANDA**
+
+Esser será mais outro exemplo do poder do Next.
+
+````ts
+// src/libs/calc.ts (exemplo de comoneten que sera carregado de modo LazyLoad)
+export function Modal() {
+  return <h1>Janela Modal carregada por demanda</h1>;
+}
+````
+
+````ts
+// src/pages/calculo.tsx (exemplo de pagina que vai chamar um compoente por LazyLoad)
+/* eslint-disable react/display-name */
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
+
+
+const Modal = dynamic(
+  () => import('../components/Modal').then(mod => mod.Modal),
+  {
+    loading: () => <p>Loading...</p>,
+    ssr: false,
+  },
+);
+
+export default function Calculo() {
+
+  // Estado que vai gerenciar o estado
+  const [modalVisible, setModalVisible] = useState(false);
+
+  async function handleSum() {
+    const calc = (await import('../libs/calc')).default;
+
+    //alert(calc.sum(5, 6));
+  }
+
+  function handleModalVisible() {
+    setModalVisible(true);
+  }
+
+  return (
+    <div>
+      <h1>Calculo</h1>
+      <button onClick={handleModalVisible}>Somar</button>
+      // Se o usaruio nunca clicar no botao que muda 'modalVisible'
+      // entao nunca vai chamar e importar o componente 'Modal'
+      {modalVisible && <Modal />}
+    </div>
+  );
+}
+````
+
+Fazemos o lazyLoad usando `dynamic` do `next/dynamic`
+
+````ts
+const Modal = dynamic(
+  // primeir parametro é a importaçao
+  () => import('../components/Modal').then(mod => mod.Modal),
+  {
+    loading: () => <p>Loading...</p>,
+    ssr: false,
+  },
+);
+````
+
+## SEO
+
+````ts
+// src/components/SEO.tsx
+import Head from 'next/head';
+
+// interface para defeinir quais porps dá pra passar na hora da chamada desse componente
+// Alguns tem '?' para inidicar que é opcional,  já na chamda, alguns vão receber um valor por default
+interface SEOProps {
+  title: string;
+  description?: string;
+  image?: string;
+  excludeTitleSuffix?: boolean;
+  indexPage?: boolean;
+}
+
+// desestruturaamos para já pegar separadao e por valores por defaultt
+export default function SEO({
+  title,
+  description,
+  image,
+  excludeTitleSuffix = false,
+  indexPage = true,
+}: SEOProps) {
+  const pageTitle = `${title} ${!excludeTitleSuffix ? '| Dev News' : ''}`;
+
+  const pageImage = image
+    ? `${process.env.NEXT_PUBLIC_SITE_URL}/${image}`
+    : null;
+  return (
+    <Head>
+      <title>{pageTitle}</title>
+
+      {description && <meta name="description" content={description} />}
+      {pageImage && <meta name="image" content={pageImage} />}
+      {!indexPage && <meta name="robots" content="noindex,nofollow" />}
+
+      <meta httpEquiv="x-ua-compatible" content="IE=edge,chrome=1" />
+      <meta name="MobileOptimized" content="320" />
+      <meta name="HandheldFriendly" content="True" />
+      <meta name="theme-color" content="#302F38" />
+      <meta name="msapplication-TileColor" content="#302F38" />
+      <meta name="referrer" content="no-referrer-when-downgrade" />
+      <meta name="google" content="notranslate" />
+
+      <meta property="og:title" content={pageTitle} />
+      <meta property="og:description" content={description} />
+      <meta property="og:locale" content="pt_BR" />
+      <meta property="og:type" content="website" />
+      <meta property="og:site_name" content={pageTitle} />
+      <meta property="og:image" content={pageImage} />
+      <meta property="og:image:secure_url" content={pageImage} />
+      <meta property="og:image:alt" content="Thumbnail" />
+      <meta property="og:image:type" content="image/png" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+
+      <meta name="twitter:title" content={pageTitle} />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@ContactstSmart" />
+      <meta name="twitter:creator" content="@ContactstSmart" />
+      <meta name="twitter:image" content={pageImage} />
+      <meta name="twitter:image:src" content={pageImage} />
+      <meta name="twitter:image:alt" content="Thumbnail" />
+      <meta name="twitter:image:width" content="1200" />
+      <meta name="twitter:image:height" content="620" />
+    </Head>
+  );
+}
+````
+
+
+Chamadno ele
+
+````ts
+
+<SEO title="Posts" />
+````
+
+## PrimiC CMS
+
+Logado com o @g e senha default
+
+criao um "new type" onde podemos especifiar como será a estrutura do nosso post, da tablea post,
+
+
++ cria Repatiable Type de nome "Post"
+
+
+Depopis busque cria um documento, que serquirar esse layout.  Depois queslava voce tem que pubilhs para realmente disponibilizar ele
+
+api securituy
+
+nome dela: next-project-dev-news
+
+=> MC5ZY3pmb3hFQUFDTUFFd0Ry.Y--_ve-_ve-_ve-_vWnvv73vv70oVe-_vWHvv73vv73vv73vv71HYO-_vQpRHBTvv73vv73vv71gXhwB77-9Tg
+
+## Usano Prismic
+
+Muaresmo os arquivos de post ou sej `pages/posts/index.tsx` e `pages/pots/posts.modules.scss`
+
+Para consumir os dados, vamo criar um serviço separado para fazer o get.
+Vamos usar o client do primsic que é uma lib.
+
+amos instalar primic-dom para axuliar a trazer tudo com um formato melhor. Tudo que for riacht-text ssera mantido.
+
+Cliente do Primsic
+
+````ts
+// src/services/prismic.ts
+import Prismic from '@prismicio/client';
+
+export function getPrismicClient(req?: unknown) {
+  const prismic = Prismic.client(process.env.PRISMIC_ENDPOINT, {
+    req,
+    accessToken: process.env.PRISMIC_ACCESS_TOKEN,
+  });
+
+  return prismic;
+}
+````
+
+Usano Prismic
+
+````tsx
+import { GetStaticProps } from 'next';
+import Link from 'next/link';
+import SEO from '../../components/SEO';
+import styles from './posts.module.scss';
+// Chamando Prismic
+import { getPrismicClient } from '../../services/prismic';
+import Prismic from '@prismicio/client';
+import { RichText } from 'prismic-dom';
+
+interface Post {
+  slug: string;
+  title: string;
+  excerpt: string;
+  updatedAt: string;
+}
+
+interface PostsProps {
+  posts: Post[];
+}
+
+export default function Posts({ posts }: PostsProps) {
+  return (
+    <>
+      <SEO title="Posts" />
+
+      <main className={styles.container}>
+        <div className={styles.posts}>
+          {posts.map(post => (
+            <Link href="#" key={post.slug}>
+              <a>
+                <time>{post.updatedAt}</time>
+                <strong>{post.title}</strong>
+                <p>{post.excerpt}</p>
+              </a>
+            </Link>
+          ))}
+        </div>
+      </main>
+    </>
+  );
+}
+
+export const getStaticProps: GetStaticProps = async () => {
+  // Cliente Primic ja configuraado para fazer a constular a API
+  const prismic = getPrismicClient();
+  // Fetch da API
+  const response = await prismic.query(
+    [Prismic.predicates.at('document.type', 'post')],
+    {
+      fetch: ['post.title', 'post.content'],
+    },
+  );
+  // Para cada dado da response
+  const posts = response.results.map(post => {
+    return {
+      slug: post.uid,
+      title: RichText.asText(post.data.title),
+      excerpt:
+        // Bucar o primeiro campo que seja do tipo 'paragpath' vai pegar o seu conteudo e por aqui
+        post.data.content.find(content => content.type === 'paragraph')?.text ??
+        '',
+      updatedAt: new Date(post.last_publication_date).toLocaleDateString(
+        'pt-BR',
+        {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        },
+      ),
+    };
+  });
+
+  return {
+    props: {
+      posts,
+    },
+    revalidate: 60 * 60 * 12, // 12 horas
+  };
+};
+
+````
+
+
+## Cada post individual
+
+````ts
+// src/pages/posts/[slugs].tsx
+import { GetStaticPaths, GetStaticProps } from 'next';
+import { useRouter } from 'next/router';
+import SEO from '../../components/SEO';
+import styles from './post.module.scss';
+// Primisc
+import Prismic from '@prismicio/client';
+import { RichText } from 'prismic-dom';
+import { getPrismicClient } from '../../services/prismic';
+
+// Interface para cada dado do post
+interface PostProps {
+  post: {
+    slug: string;
+    title: string;
+    content: string;
+    updatedAt: string;
+  };
+}
+
+/*
+Usaremos a estrategia do fallback para buscar o post na hora em que for requisitado
+*/
+export default function Post({ post }: PostProps) {
+  const router = useRouter();
+
+  if (router.isFallback) {
+    return <p>Loading...</p>;
+  }
+
+  return (
+    <>
+      <SEO title="Post" />
+
+      <main className={styles.container}>
+        <article className={styles.post}>
+          <h1>{post.title}</h1>
+          <time>{post.updatedAt}</time>
+          <div
+            className={styles.content}
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+          {/* dangerouslySetInnerHTML: Indica que é MarkDown internamente nessa div */}
+        </article>
+      </main>
+    </>
+  );
+}
+
+// Gerencia a página em si, a sua url
+// serao criadas via fallback, sob demanda
+// A cada primeiro acesso a o respectivo psote, vai gerar a página estática
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    paths: [],
+    fallback: true,
+  };
+};
+
+// Será gerado páginas estáticas
+// essa páginas criadso serão invalidadas depois de 12 horas
+// e porisos serao criadsa denvoo
+// Ela pode ficar invalida, ams só será recriada apos um primeiro acesso depois de 12 horas
+export const getStaticProps: GetStaticProps = async context => {
+
+  const { slug } = context.params;
+
+  const prismic = getPrismicClient();
+
+  const response = await prismic.getByUID('post', String(slug), {});
+
+  const post = {
+    slug,
+    title: RichText.asText(response.data.title),
+    content: RichText.asText(response.data.content),
+    updatedAt: new Date(response.last_publication_date).toLocaleDateString(
+      'pt-BR',
+      {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      },
+    ),
+  };
+
+  return {
+    props: {
+      post,
+    },
+    revalidate: 60 * 60 * 12, // 12 horas
+  };
+};
+````
+
+## Testes usando Jest e Test Library
+
+npm i -D jest jest-dom ts-jest @testing-library/jest-dom @testing-library/dom @testing-library/react babel-jest identity-obj-proxy
+
+jest :jest em si
+jest-dom: manipular elementos da dom
+ts-jest: jest reconhceça typeScript
+@testing-library: tem que integrar com jset/dom/react
+babel-jest: para que jest leia typescript
+identity-obj-porps:? reconhecer SASS
+
+Na raiz do projeto cire o aqruivo
+
+jest.config.js
+````js
+module.exports = {
+
+  // nao olhar o que tem aki dentro
+  testPathIgnorePatterns: ["/node_modules/", "/.next/"],
+  // setup inicial que o jest vai executar
+  setupFilesAfterEnv: ["<rootDir>/src/tests/setupTests.ts"],
+  // o que o babel-jest tem que compilar para o jest interpretar javascrip direito
+  transform: {
+    "^.+\\.(js|jsx|ts|tsx)$": "<rootDir>/node_modules/babel-jest"
+  },
+  // eveitar um bug
+  testEnvironment: "jsdom",
+  // interpretar o sass
+  moduleNameMapper: {
+    "\\.(scss|css|sass)$": "identity-obj-proxy"
+  }
+};
+````
+
+babel.config.js
+````js
+module.exports = {
+  presets: ['next/babel']
+}
+````
+
+altero o package.json par apor `"test": "jest"`
+
+## Craiando os testes
+
+Em cada pasta do compoente, vai criar o arquivo de text
+
+Para os compoennte, vamos testar cad aum inidivuamente na propria pasta componet colocando como `ActiveLink.spect.tsx`
+
+Exemplo
+
+````tsx
+import { render } from '@testing-library/react';
+import { ActiveLink } from '.';
+
+// Quando chamar essa lib, vai retornar por default esse objeto (para nao precisar chamar a lib)
+jest.mock('next/router', () => {
+  return {
+    useRouter() {
+      return {
+        asPath: '/',
+      };
+    },
+  };
+});
+
+describe('ActiveLink component', () => {
+  // Verficai se o link  Renderizado tem o 'home'
+  it('renders correctly', () => {
+    const { getByText } = render(
+      <ActiveLink href="/" activeClassName="active">
+        <a>Home</a>
+      </ActiveLink>,
+    );
+
+    expect(getByText('Home')).toBeInTheDocument();
+  });
+
+  // Verifica se o Activelink de Home com a classe ativda está mesmo ativada, ou seja, se tem a classe active
+  it('adds active class if the link as currently active', () => {
+    const { getByText } = render(
+      <ActiveLink href="/" activeClassName="active">
+        <a>Home</a>
+      </ActiveLink>,
+    );
+    // Verifica se
+    expect(getByText('Home')).toHaveClass('active');
+  });
+});
+
+````
+
+### Coverage Report
+
+Recuros do Jest parta termos noçao se nosso sestse estao ccubrindo tuo que é necessa´rio
+
+para usalo, comolocmaos mais props no jest.config.js
+
+````js
+},
+  collectCoverage: true,
+  // EM SUNMA: Vai fazer um coverata nosarquivos .tsx que sao os arquivos que tem os componetne que importam
+  collectCoverageFrom: [
+    "src/**/*.tsx",
+    "!src/**/*.spec.tsx", // arquivo de testse nao preciso, OBVIO
+    "!src/**/_app.tsx", // nao é um compoenten real a ser testado
+    "!src/**/_document.tsx"
+  ],
+  coverageReporters: ["lcov", "json"]
+````
+
+npm run test --coverage
+
+Vai criar uma pasta coverage com um `index.html  que vai ter o relatório
+
+
+
+## Principais opções para deploy
+
+Agente precisa do node.js para fazer SSR e SSG,  ppor isos nao é em qualqur lugar que dá pra por nosso projeto Next.
+
+Existe o AWS Amplify
+
+Usaremos na Vercel
+
+Tenha um Repositorio criado, é de lá que o Vercel Vai pegar
+
+Lmebre-se de configurar as varaivels de ambiente
+
+Na variavel de ambiente `NEXT_PUBLIC_URL_SITE` Troque de local Host para a URL criada pelo Vercel
+
+
+## MModificaçoes finais
+
+1. Instlaar a lib `date-fns` par alidar melhor com dada
+2. No slug, usar RichText.asHtml para ler MarkDwons
